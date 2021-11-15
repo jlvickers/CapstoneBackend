@@ -1,0 +1,12 @@
+databases:
+    SecurityData:
+        user: [DB user]
+        password: [DB password]
+        host: localhost
+    SecurityDataDev:
+        user: [DB user]
+        password: [DB password]
+        host: localhost
+AVInfo:
+    api_key: [api key]
+    intraday_url: [api url]

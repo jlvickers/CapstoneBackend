@@ -1,5 +1,6 @@
 import pandas as pd
 import requests as req
+import numpy
 import pymysql.cursors
 import argparse
 import yaml
@@ -10,7 +11,7 @@ import sqlInt as si
 from ta.utils import dropna
 
 #loads credentials from YAML doc in local folder
-def loadYAML(creds):
+def loadYAML(creds) -> list:
     with open(creds, "r") as f:
         data = yaml.load(f, Loader=yaml.FullLoader)
     credentials = {
@@ -22,7 +23,8 @@ def loadYAML(creds):
         'intraday_url': data['AVInfo']['intraday_url']}
     return credentials, apiInfo
 
-#resets table for dev purposes. DELETE IN FINAL PRODUCT
+"""
+resets table for dev purposes.
 def resetTables():
     creds = loadYAML('creds.yml')[0]
     connection = pymysql.connect(creds['host'], creds['user'], creds['password'], 'SecurityDataDev')
@@ -32,9 +34,9 @@ def resetTables():
         cursor.execute("ALTER TABLE secQueryInfo AUTO_INCREMENT = 1")
         cursor.execute("ALTER TABLE secPriceInfo AUTO_INCREMENT = 1")
     connection.commit()
-
+"""
 #function to call api, load json into dataframe and transform dataframe to usable format
-def queryToDF(symbol, interval: int):
+def queryToDF(symbol, interval: int) -> list:
     apiInfo = loadYAML("creds.yml")[1]
     r = req.get(apiInfo["intraday_url"] % (symbol, interval)).json()
     #checks JSON file from AV API to determine what portion the data is housed in
@@ -71,7 +73,7 @@ def queryToDF(symbol, interval: int):
     return df, metaData
 
 #determines best timeframe based on user defined timeframe passed into it
-def getBestTF(givenTF):
+def getBestTF(givenTF) -> int:
     valid = [1,5,15,30,60]
     working = []
     #mod of given value against pre-defined timeframes from AV, then returns the highest value so we're getting the most accurate/efficient info
@@ -97,19 +99,22 @@ def paramFilter(attr, df) -> list:
             h.append(df['volume'])
     return h
 
-def addIndicators(indList: list, lib, df):
+def addIndicators(indList: list, lib, df) -> list:
     trouble = {'psar_up'}
-    allNames = ['VolumeWeightedAveragePrice', 'acc_dist_index', 'chaikin_money_flow', 'ease_of_movement', 'force_index', 'money_flow_index', 
-            'negative_volume_index', 'np', 'on_balance_volume', 'pd', 'sma_ease_of_movement', 'volume_price_trend', 'volume_weighted_average_price',
-            'AverageTrueRange', 'BollingerBands', 'DonchianChannel', 'KeltnerChannel', 'UlcerIndex', 'average_true_range', 'bollinger_hband', 
-            'bollinger_hband_indicator', 'bollinger_lband', 'bollinger_lband_indicator', 'bollinger_mavg', 'bollinger_pband', 'bollinger_wband', 
-            'donchian_channel_hband', 'donchian_channel_lband', 'donchian_channel_mband', 'donchian_channel_pband', 'donchian_channel_wband', 
-            'keltner_channel_hband', 'keltner_channel_hband_indicator', 'keltner_channel_lband', 'keltner_channel_lband_indicator', 'keltner_channel_mband', 
-            'keltner_channel_pband', 'keltner_channel_wband', 'np', 'pd', 'ulcer_index', 'MACD', 'MassIndex', 'adx', 'adx_neg', 'adx_pos', 'aroon_down', 
-            'aroon_up', 'cci', 'dpo', 'ema_indicator', 'ichimoku_a', 'ichimoku_b', 'ichimoku_base_line', 'ichimoku_conversion_line', 'kst', 'kst_sig', 
-            'macd', 'macd_diff', 'macd_signal', 'mass_index', 'np', 'pd', 'psar_down', 'psar_down_indicator', 'psar_up', 'psar_up_indicator', 'sma_indicator', 
-            'stc', 'trix', 'vortex_indicator_neg', 'vortex_indicator_pos', 'wma_indicator', 'StochasticOscillator', 'UltimateOscillator', 'awesome_oscillator', 
-            'np', 'pd', 'ppo', 'ppo_hist', 'ppo_signal', 'pvo', 'pvo_hist', 'pvo_signal', 'roc', 'rsi', 'stoch', 'stoch_signal', 'stochrsi', 'stochrsi_d', 
+    #order is Volume, Volatility, trend, momentum
+    allNames = ['acc_dist_index', 'chaikin_money_flow', 'ease_of_movement', 'force_index', 'money_flow_index', 
+            'negative_volume_index', 'on_balance_volume', 'sma_ease_of_movement', 'volume_price_trend', 'volume_weighted_average_price',
+            
+            'average_true_range', 'bollinger_hband', 'bollinger_hband_indicator', 'bollinger_lband', 'bollinger_lband_indicator', 'bollinger_mavg',
+            'bollinger_pband', 'bollinger_wband', 'donchian_channel_hband', 'donchian_channel_lband', 'donchian_channel_mband', 'donchian_channel_pband',
+            'donchian_channel_wband', 'keltner_channel_hband', 'keltner_channel_hband_indicator', 'keltner_channel_lband', 'keltner_channel_lband_indicator',
+            'keltner_channel_mband', 'keltner_channel_pband', 'keltner_channel_wband', 'ulcer_index', 
+            
+            'adx', 'adx_neg', 'adx_pos', 'aroon_down','aroon_up', 'cci', 'dpo', 'ema_indicator', 'ichimoku_a', 'ichimoku_b', 
+            'ichimoku_base_line', 'ichimoku_conversion_line', 'kst', 'kst_sig', 'macd', 'macd_diff', 'macd_signal', 'mass_index', 'psar_down', 
+            'psar_down_indicator', 'psar_up', 'psar_up_indicator', 'sma_indicator', 'stc', 'trix', 'vortex_indicator_neg', 'vortex_indicator_pos', 'wma_indicator', 
+            
+            'awesome_oscillator', 'ppo', 'ppo_hist', 'ppo_signal', 'pvo', 'pvo_hist', 'pvo_signal', 'roc', 'rsi', 'stoch', 'stoch_signal', 'stochrsi', 'stochrsi_d', 
             'stochrsi_k', 'tsi', 'ultimate_oscillator', 'williams_r', 'kama']
     h = {}
     for x in indList:
@@ -137,10 +142,10 @@ def addIndicators(indList: list, lib, df):
                     df[x] = attr(*params, fillna=True)
                 else:
                     df[x] = attr(*params)
-                h[name] = str(round(df.iloc[-1][x], 4))
+                h[x] = round(df.iloc[-1][x], 4)
     return h
 
-def parseAndAdd(args, df):
+def parseAndAdd(args, df) -> dict:
     h = {}
     df = dropna(df)
     if args.vol != None:
@@ -179,6 +184,7 @@ if __name__ == '__main__':
     parser.add_argument("-trend", "--trend")
     parser.add_argument("-momo", "--momo")
     args = parser.parse_args()
+    # custom class object to handle sql interactions
     dbWorker = si.sqlInt(args.n.upper(), 'creds.yml', 'SecurityDataDev')
     try:
         #getting data from DB, if not, querying API
@@ -216,6 +222,6 @@ if __name__ == '__main__':
 
     #general error handling
     except Exception as e:
-        print("Error in Query",+type(e),e)
+        print("Error in Query",type(e),e)
         quit()
     

@@ -45,7 +45,7 @@ class sqlInt:
         self.connection.commit()
         
     #checks DB for useful info IE not outdated, loads into DF if there is, otherwise returns None
-    def checkDB(self, tf) -> pd.Dataframe:
+    def checkDB(self, tf):
         timeframe = "({0}min)".format(tf)
         query = "SELECT * FROM secQueryInfo WHERE symbol = '{0}' AND queryInfo LIKE '%{1}%' ORDER BY queryID DESC LIMIT 1".format(self.symbol, timeframe)
         with self.connection.cursor() as cursor:
